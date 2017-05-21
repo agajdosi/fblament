@@ -21,23 +21,44 @@
 package cmd
 
 import (
+	"database/sql"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"strings"
 
+	yaml "gopkg.in/yaml.v2"
+
+	fb "github.com/huandu/facebook"
 	"github.com/spf13/cobra"
 )
 
 // getCmd represents the get command
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Gets comments from posts of defined pages and saves them into a database",
+	Long:  `Gets comments from posts of defined pages and saves them into a database`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("get called")
+		refreshToken()
+		commentCount := 0
+		pages := Configuration["pages"].([]interface{})
+		for _, page := range pages {
+			pageID := ""
+			switch v := page.(type) {
+			case int:
+				pageID = fmt.Sprintf("%d", page.(int))
+				fmt.Printf("\nGetting comments for page: %v\n", page)
+				getObjects(pageID, "posts", "comments", &commentCount)
+			case string:
+				pageID = page.(string)
+				fmt.Println("Getting comments for page:", page)
+				getObjects(pageID, "posts", "comments", &commentCount)
+				fmt.Println()
+			default:
+				fmt.Printf("skipping page id=%v (id must be int or string)\n", v)
+			}
+		}
 	},
 }
 
@@ -53,4 +74,77 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// getCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func getObjects(ownerID, objectType, nextType string, count *int) string {
+	var app = fb.New(Configuration["clientID"].(string), Configuration["clientSecret"].(string))
+	session := app.Session(Configuration["accessToken"].(string))
+	err := session.Validate()
+	if err != nil {
+		fmt.Println(err)
+	}
+	call := "/" + ownerID + "/" + objectType
+	result, _ := session.Get(call, nil)
+	if err != nil {
+		fmt.Println("Error results:", err, result)
+	}
+	paging, err := result.Paging(session)
+	if err != nil {
+		fmt.Println("Error paging:", err)
+	}
+
+	noMore := false
+	for !noMore {
+		objects := paging.Data()
+		for _, object := range objects {
+			switch nextType {
+			case "":
+				*count++
+				fmt.Printf("\rtotal number of comments saved:%d", *count)
+				saveComment(object["id"].(string), object["from"].(map[string]interface{})["id"].(string), object["message"].(string))
+			default:
+				getObjects(object["id"].(string), nextType, "", count)
+			}
+
+		}
+		noMore, _ = paging.Next()
+	}
+	return "satan je dobrota"
+}
+
+func saveComment(commentID, userID, comment string) {
+	db, err := sql.Open("sqlite3", SQLPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	comment = strings.Replace(comment, "'", "''", -1)
+	sqlStmt := fmt.Sprintf("INSERT INTO comments(comment_id, user_id, comment) VALUES('%s', '%s', '%s');", commentID, userID, comment)
+	_, err = db.Exec(sqlStmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, sqlStmt)
+	}
+}
+
+func refreshToken() {
+	res, err := fb.Get("/oauth/access_token", fb.Params{
+		"grant_type":        "fb_exchange_token",
+		"client_id":         Configuration["clientID"],
+		"client_secret":     Configuration["clientSecret"],
+		"fb_exchange_token": Configuration["accessToken"],
+	})
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	Configuration["accessToken"] = res["access_token"]
+	d, err := yaml.Marshal(&Configuration)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+		return
+	}
+	ioutil.WriteFile(YamlPath, d, os.ModePerm)
+	return
 }

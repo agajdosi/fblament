@@ -21,23 +21,22 @@
 package cmd
 
 import (
-	"fmt"
+	"database/sql"
+	"log"
+	"os"
 
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/cobra"
 )
 
 // setupCmd represents the setup command
 var setupCmd = &cobra.Command{
 	Use:   "setup",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Helps to setup FBlament database and config file",
+	Long:  `Helps to setup FBlament database and config file in .fblament folder inside of the home folder.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("setup called")
+		deleteDatabase()
+		createDatabase()
 	},
 }
 
@@ -53,4 +52,26 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// setupCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func deleteDatabase() int {
+	os.Remove(SQLPath)
+	return 0
+}
+
+func createDatabase() int {
+	db, err := sql.Open("sqlite3", SQLPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	sqlStmt := "CREATE TABLE comments (comment_id TEXT PRIMARY KEY, user_id TEXT, match_count TEXT, comment TEXT);"
+	_, err = db.Exec(sqlStmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, sqlStmt)
+		return 0
+	}
+
+	return 0
 }

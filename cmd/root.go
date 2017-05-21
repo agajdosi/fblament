@@ -22,25 +22,40 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
 	"os"
+	"path/filepath"
+
+	yaml "gopkg.in/yaml.v2"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var cfgFile string
 
+//FBlamentPath = where config and SQLite lies
+var FBlamentPath string
+
+//YamlPath = where config file is
+var YamlPath string
+
+//SQLPath = where database is
+var SQLPath string
+
+//Configuration = stores data from config.yaml
+var Configuration map[interface{}]interface{}
+
+//ConfigExist = does config exist?
+var ConfigExist bool
+
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "fblament",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "CLI tool which searches for angry comments on Facebook",
+	Long: `CLI tool which searches for angry comments on Facebook.
+Ideal choice when you need to support your criminal charge with some fresh data.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
@@ -61,7 +76,7 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.fblament.yaml)")
+	//RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.kidnei.yaml)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -70,26 +85,24 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(home)
-			os.Exit(1)
-		}
+	userHome, err := homedir.Dir()
+	if err != nil {
+		os.Exit(1)
+	}
+	FBlamentPath = filepath.Join(userHome, ".fblament")
+	os.MkdirAll(FBlamentPath, os.ModePerm)
 
-		// Search config in home directory with name ".cobra" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".cobra")
+	YamlPath = filepath.Join(FBlamentPath, "config.yaml")
+	SQLPath = filepath.Join(FBlamentPath, "main.db")
+
+	data, err := ioutil.ReadFile(YamlPath)
+	if err != nil {
+		fmt.Println("config not found")
 	}
 
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	Configuration = make(map[interface{}]interface{})
+	err = yaml.Unmarshal([]byte(data), &Configuration)
+	if err != nil {
+		log.Fatalf("error: %v", err)
 	}
 }
