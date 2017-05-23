@@ -26,7 +26,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"reflect"
 	"regexp"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -46,17 +45,7 @@ var parseCmd = &cobra.Command{
 Lament files for individual users will be stored in .fblament/report`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Matching words of users' comments...")
-		expressions := Configuration["regexps"].([]interface{})
-		fmt.Println(expressions, reflect.TypeOf(expressions))
-		var regExps []*regexp.Regexp
-		for _, expression := range expressions {
-			fmt.Println(expression, reflect.TypeOf(expression))
-			compiled := regexp.MustCompile(expression.(string))
-			regExps = append(regExps, compiled)
-		}
-
 		getUsers()
-
 	},
 }
 
@@ -108,13 +97,27 @@ func getUserComments(userID string) {
 		if err != nil {
 			log.Fatal("v pici :(", err)
 		}
-		//HERE WE ARE GOING TO SEARCH IF THE COMMENT MATCHES WORDS/REGEXPS
-		matches = append(matches, match{commentID: commentID, comment: comment})
+		if validateComment(comment) {
+			matches = append(matches, match{commentID: commentID, comment: comment})
+		}
 	}
-	//SAVE RESULTS INTO A FILE
 	if len(matches) >= Configuration["minimumLimit"].(int) {
 		saveResults(userID, matches)
 	}
+}
+
+func validateComment(comment string) bool {
+	expressions := Configuration["regexps"].([]interface{})
+	//var regExps []*regexp.Regexp
+	for _, expression := range expressions {
+		compiled := regexp.MustCompile(expression.(string))
+		//regExps = append(regExps, compiled)
+		if compiled.MatchString(comment) {
+			fmt.Println(compiled.FindString(comment))
+			return true
+		}
+	}
+	return false
 }
 
 func saveResults(userID string, matches []match) {
