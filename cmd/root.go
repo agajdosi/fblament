@@ -44,6 +44,9 @@ var YamlPath string
 //SQLPath = where database is
 var SQLPath string
 
+//OutputFolderPath = where resulting files will be created
+var OutputFolderPath string
+
 //Configuration = stores data from config.yaml
 var Configuration map[interface{}]interface{}
 
@@ -94,6 +97,8 @@ func initConfig() {
 
 	YamlPath = filepath.Join(FBlamentPath, "config.yaml")
 	SQLPath = filepath.Join(FBlamentPath, "main.db")
+	OutputFolderPath = filepath.Join(FBlamentPath, "results")
+	os.MkdirAll(OutputFolderPath, os.ModePerm)
 
 	data, err := ioutil.ReadFile(YamlPath)
 	if err != nil {

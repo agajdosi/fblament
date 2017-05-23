@@ -28,10 +28,10 @@ import (
 	"os"
 	"strings"
 
-	yaml "gopkg.in/yaml.v2"
-
 	fb "github.com/huandu/facebook"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/cobra"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // getCmd represents the get command
@@ -100,7 +100,7 @@ func getObjects(ownerID, objectType, nextType string, count *int) string {
 			switch nextType {
 			case "":
 				*count++
-				fmt.Printf("\rtotal number of comments saved:%d", *count)
+				fmt.Printf("\rtotal number of comments saved: %d", *count)
 				saveComment(object["id"].(string), object["from"].(map[string]interface{})["id"].(string), object["message"].(string))
 			default:
 				getObjects(object["id"].(string), nextType, "", count)
