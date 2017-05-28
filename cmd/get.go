@@ -64,20 +64,20 @@ var getCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(getCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// getCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// getCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func getObjects(ownerID, objectType, nextType string, count *int) string {
-	var app = fb.New(Configuration["clientID"].(string), Configuration["clientSecret"].(string))
+func getObjects(ownerID, objectType, nextType string, count *int) {
+	clientID := ""
+	clientSecret := Configuration["clientSecret"].(string)
+	switch t := Configuration["clientID"].(type) {
+	case int:
+		clientID = fmt.Sprintf("%d", Configuration["clientID"].(int))
+	case string:
+		clientID = Configuration["clientID"].(string)
+	default:
+		fmt.Println("Error - clientID must be int or string, is: %v", t)
+	}
+	var app = fb.New(clientID, clientSecret)
 	session := app.Session(Configuration["accessToken"].(string))
 	err := session.Validate()
 	if err != nil {
@@ -87,12 +87,12 @@ func getObjects(ownerID, objectType, nextType string, count *int) string {
 	result, _ := session.Get(call, nil)
 	if err != nil {
 		fmt.Println("Error results:", err, result)
-		return "no more"
+		return
 	}
 	paging, err := result.Paging(session)
 	if err != nil {
 		fmt.Println("Error paging:", err)
-		return "no more paging"
+		return
 	}
 
 	noMore := false
@@ -117,7 +117,7 @@ func getObjects(ownerID, objectType, nextType string, count *int) string {
 			}
 		}
 	}
-	return "all good"
+	return
 }
 
 func saveComment(commentID, userID, comment string) {

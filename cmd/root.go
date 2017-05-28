@@ -79,7 +79,6 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	//RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.kidnei.yaml)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -102,12 +101,12 @@ func initConfig() {
 
 	data, err := ioutil.ReadFile(YamlPath)
 	if err != nil {
-		fmt.Println("config not found")
+		fmt.Println("Error reading the config: ", err)
 	}
 
 	Configuration = make(map[interface{}]interface{})
 	err = yaml.Unmarshal([]byte(data), &Configuration)
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		log.Fatalf("Error unmarshaling the config: %v", err)
 	}
 }
