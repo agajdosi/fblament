@@ -52,7 +52,7 @@ var getCmd = &cobra.Command{
 				getObjects(pageID, "posts", "comments", &commentCount)
 			case string:
 				pageID = page.(string)
-				fmt.Println("Getting comments for page:", page)
+				fmt.Println("\nGetting comments for page: %v\n", page)
 				getObjects(pageID, "posts", "comments", &commentCount)
 				fmt.Println()
 			default:
@@ -87,10 +87,12 @@ func getObjects(ownerID, objectType, nextType string, count *int) string {
 	result, _ := session.Get(call, nil)
 	if err != nil {
 		fmt.Println("Error results:", err, result)
+		return "no more"
 	}
 	paging, err := result.Paging(session)
 	if err != nil {
 		fmt.Println("Error paging:", err)
+		return "no more paging"
 	}
 
 	noMore := false
@@ -107,9 +109,15 @@ func getObjects(ownerID, objectType, nextType string, count *int) string {
 			}
 
 		}
-		noMore, _ = paging.Next()
+		noMore = !paging.HasNext()
+		if !noMore {
+			noMore, err = paging.Next()
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
 	}
-	return "satan je dobrota"
+	return "all good"
 }
 
 func saveComment(commentID, userID, comment string) {

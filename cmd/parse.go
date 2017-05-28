@@ -27,6 +27,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/cobra"
@@ -108,6 +109,7 @@ func getUserComments(userID string) {
 
 func validateComment(comment string) bool {
 	expressions := Configuration["regexps"].([]interface{})
+	comment = strings.ToLower(comment)
 	//var regExps []*regexp.Regexp
 	for _, expression := range expressions {
 		compiled := regexp.MustCompile(expression.(string))
