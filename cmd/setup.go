@@ -22,6 +22,8 @@ package cmd
 
 import (
 	"database/sql"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 
@@ -37,6 +39,8 @@ var setupCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		deleteDatabase()
 		createDatabase()
+		deleteConfig()
+		createConfig()
 	},
 }
 
@@ -54,12 +58,12 @@ func init() {
 	// setupCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func deleteDatabase() int {
+func deleteDatabase() {
 	os.Remove(SQLPath)
-	return 0
+	return
 }
 
-func createDatabase() int {
+func createDatabase() {
 	db, err := sql.Open("sqlite3", SQLPath)
 	if err != nil {
 		log.Fatal(err)
@@ -70,8 +74,53 @@ func createDatabase() int {
 	_, err = db.Exec(sqlStmt)
 	if err != nil {
 		log.Printf("%q: %s\n", err, sqlStmt)
-		return 0
+		return
 	}
 
-	return 0
+	return
+}
+
+func deleteConfig() {
+	os.Remove(YamlPath)
+	return
+}
+
+func createConfig() {
+	configText := `# This is a configuration file for fblament.
+# More information about setting this configuration file can be found here: https://github.com/agajdosi/fblamentt#getting-the-tokens.
+
+# Warning: all comments in this file will be lost after running the "fblament get" command. 
+
+# ID of your fake application
+clientID: ""
+
+# Secret for application under which fblament will authenticate to Facebook
+clientSecret: ""
+
+# Your personal token which gives fblament ability to read information from Facebook under your account
+accessToken: ""
+
+# IDs of Facebook pages which you want to crawl
+pages:
+- 1531739643707341
+- 777739285668748
+- 828801157196779
+
+# Minimum number of matched comments which are needed to save user into "results" folder
+minimumLimit: 1
+
+# Regular expressions or common strings for which it is searched in comments
+regexps:
+- "example of string to match"
+- "example of (regular expression|regexp) to match"
+`
+	err := ioutil.WriteFile(YamlPath, []byte(configText), os.ModePerm)
+	if err != nil {
+		fmt.Println("Error creating the config file: ", err)
+		return
+	}
+	fmt.Printf(`Configuration file with helpful comments created at %v. Please fill in required values to run "fblament get" command successfully.
+More info about getting the token, clientID and clientSecret from Facebook can be found here: https://github.com/agajdosi/fblamentt#getting-the-tokens. 
+`, YamlPath)
+	return
 }
