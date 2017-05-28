@@ -1,0 +1,30 @@
+[[fblament-roadmap]]
+# fblament
+:icons: 3
+:toc: macro
+:toc-title: Readme content:
+:toclevels: 1
+
+toc::[]
+---
+
+[[about]]
+=== About fblament
+*Examplary:* fblament can be used to track hate speech of users on extremists' pages and to export these data in handy format which can be later used to submit a criminal complaint.
+
+*Technically:* fblament is a CLI tool for minning and parsing of user comments from facebook. It gets all comments from posts of selected pages and saves them into a database.
+Fblament is then able to search for selected strings or regular expressions and save a handy preview of those users, whose comments matched with search.
+
+[[getting-stared]]
+=== Gettting started
+To be added.
+
+[[examples]]
+=== Examples
+How fblament was used by its users on their own projects. Please raise an isssue or contact me if you want your usage being documented here.
+
+[[how-to-contribute]]
+=== How to contribute
+Fblament project is open for all types of collaboration - from contributing code or documentation, discussing and proposing plans, to creating tutorial videos or graphics.
+
+All kinds of contribution are truly welcome.
