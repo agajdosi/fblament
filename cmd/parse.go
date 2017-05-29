@@ -23,12 +23,14 @@ package cmd
 import (
 	"database/sql"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	fb "github.com/huandu/facebook"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/cobra"
 )
@@ -115,7 +117,7 @@ func validateComment(comment string) bool {
 		compiled := regexp.MustCompile(expression.(string))
 		//regExps = append(regExps, compiled)
 		if compiled.MatchString(comment) {
-			fmt.Println(compiled.FindString(comment))
+			//fmt.Println(compiled.FindString(comment))
 			return true
 		}
 	}
@@ -123,24 +125,70 @@ func validateComment(comment string) bool {
 }
 
 func saveResults(userID string, matches []match) {
-	outputFile := filepath.Join(OutputFolderPath, userID+".txt")
+	// GET NAME OF USER
+	res, err := fb.Get("/"+userID, fb.Params{
+		"client_id":     Configuration["clientID"],
+		"client_secret": Configuration["clientSecret"],
+		"access_token":  Configuration["accessToken"],
+	})
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	userName := res["name"].(string)
+
+	//TRESTNI OZNAMENI
+	outputFile := filepath.Join(OutputFolderPath, userID+"-lament.adoc")
 	file, err := os.Create(outputFile)
 	if err != nil {
 		fmt.Println("error creating file:", err)
 	}
 	defer file.Close()
 
-	//HEADER
-	str := "Results for user with ID: " + userID + "\n\n\n"
-	_, err = file.WriteString(str)
+	oznameniPath := filepath.Join(FBlamentPath, "oznameni.adoc")
+	bytes, err := ioutil.ReadFile(oznameniPath)
+	if err != nil {
+		fmt.Print(err)
+	}
+	oznameniTemplate := string(bytes)
+
+	oznameniOutput := fmt.Sprintf(":pachatel: %v \n%v", userName, oznameniTemplate)
+	_, err = file.WriteString(oznameniOutput)
 	if err != nil {
 		fmt.Println("Error writing to file:", err)
 	}
 
-	//COMMENTS
-	for _, match := range matches {
-		str = match.commentID + ":\n" + match.comment + "\n\n"
-		_, err = file.WriteString(str)
+	//PRILOHA C. 1
+	outputProfile := filepath.Join(OutputFolderPath, userID+"-profile.adoc")
+	profile, err := os.Create(outputProfile)
+	if err != nil {
+		fmt.Println("error creating file:", err)
+	}
+	defer profile.Close()
+
+	prilohaPath := filepath.Join(FBlamentPath, "priloha.adoc")
+	bytes, err = ioutil.ReadFile(prilohaPath)
+	if err != nil {
+		fmt.Print(err)
+	}
+	prilohaStr := string(bytes)
+	prilohaStr = fmt.Sprintf(":pachatel: %v \n:profil: %v \n%v", userName, userID, prilohaStr)
+	_, err = profile.WriteString(prilohaStr)
+	if err != nil {
+		fmt.Println("Error writing to file:", err)
+	}
+
+	for index, match := range matches {
+		str := fmt.Sprintf(`==== Komentář č. %v
+
+- dohledatelné na: facebook.com/%v
+- doslovné znění:
+
+ %v
+
+`, index+1, match.commentID, match.comment)
+
+		_, err = profile.WriteString(str)
 		if err != nil {
 			fmt.Println("Error writing to file:", err)
 		}
