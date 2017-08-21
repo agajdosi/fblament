@@ -2,8 +2,8 @@
 # fblament
 :icons: 3
 :toc: macro
-:toc-title: Readme content:
-:toclevels: 1
+:toc-title:
+:toclevels: 4
 
 toc::[]
 ---
@@ -15,9 +15,124 @@ toc::[]
 *Technically:* fblament is a CLI tool for minning and parsing of user comments from facebook. It gets all comments from posts of selected pages and saves them into a database.
 Fblament is then able to search for selected strings or regular expressions and save a handy preview of those users, whose comments matched with search.
 
+[[installation]]
+=== Installation
+
+===== Using go install
+
+This is recommended way of getting fblament for those who do not want to alter its source code.
+Firstly please install Go programming language, you can follow instructions at https://golang.org/doc/install.
+
+To get the fblament package please run:
+
+```
+go get github.com/agajdosi/fblament
+```
+
+This will download fblament into `GOHOME` and will make it accessible for Go.
+After that you can just run:
+
+```
+go install github.com/agajdosi/fblament
+```
+
+Installation can fail on the fact that some packages on which fblament is dependent are missing.
+If you hit this problem, please run `go get <path-to-package>` to get these needed packages as you got the fblament.
+
+===== Building from source code
+
+To install fblament clone this repository into `$GOPATH/src/github.com/agajdosi/fblament` and build it by running `go build`.
+Compiled binary then put into your path and check if it is present with `fblament --help`. 
+
+===== Using binaries
+
+Unfortunately there are currently problems with cross-compiling of fblament and thus there are not any binaries released yet. I am sorry for inconvenience. 
+
 [[getting-stared]]
 === Gettting started
-To be added.
+Fblament can be used as is to gather comments from targeted Facebook pages, save them into a database and then to match and save comments for each individual user into a text file.
+With further additions into a source code it can be used to directly generate huge amounts of criminal complaints from gathered data.
+Without these additions one needs to process generated text files manually.
+
+===== Setting up fblament home folder
+
+Fblament uses folder located at `$HOME/.fblament` to store its configuration and database data.
+To initiate this folder please run `fblament setup` command.
+
+===== Setting up the configuration data
+
+====== Facebook authentication
+
+Fblament's config is using YAML format to store and access data.
+To gain fblament ability to gather data from Facebook, please setup:
+
+```
+accessToken: <your-personal-token>
+clientID: <application-ID>
+clientSecret: <application-secret>
+```
+
+You can gain accessToken, clientID and clientSecret from Facebook using developer account.
+If you are new to this process, please search the web for an explanatory tutorial.
+Hopefully more information will soon be added directly here.
+
+====== Targeting pages
+
+To define from which pages you want fblament to extract data add their Facebook ID's into the config, for example:
+
+```YAML
+pages:
+- 507503969386789
+- 299288730413707
+- 1479122769011102
+```
+
+This setup will gather data from 3 pages, but you can add as many as you want.
+
+====== Setting parsing information
+
+Fblament uses regular expressions to parse gathered data, for example:
+
+```
+regexps:
+- murder
+- kill
+- shoot
+```
+
+This config would force fblament to export only those potentialy violent comments which contains words murder, kill or shoot.
+
+Each user will be saved into output file if number of his comments is higher or equal to minimumLimit, for example set:
+
+```
+minimumLimit: 5
+```
+
+To export only those users who have 5 or more violent comments.
+
+===== Gathering the data
+
+To start gathering the data, run:
+
+```
+fblament get
+```
+
+This will start a long process of gathering data from Facebook.
+Please be patient.
+
+===== Parsing the data
+
+Once the data are gathered, you can run:
+
+```
+fblament parse
+```
+
+This will parse all the gathered data by regular expressions defined in `config.yaml` under field `regexps` and if their number for each user is higher than `minimumLimit` then it will store these data into an output folder.
+Output folder is located in `$HOME/.fblament/results`.
+
+Best of all, this parsing is faster process and thus can be fine tuned by altering the regular expressions and minimum limit value.
 
 [[examples]]
 === Examples
@@ -26,5 +141,6 @@ How fblament was used by its users on their own projects. Please raise an isssue
 [[how-to-contribute]]
 === How to contribute
 Fblament project is open for all types of collaboration - from contributing code or documentation, discussing and proposing plans, to creating tutorial videos or graphics.
+As a starting point please create an issue so the discussion can begin.
 
 All kinds of contribution are truly welcome.
